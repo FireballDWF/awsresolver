@@ -1,0 +1,21 @@
+[{
+    "ParameterKey": "VPCId",
+    "ParameterValue": "vpc-d6fe6cb1"
+  }, {
+    "ParameterKey": "SubnetIdA",
+    "ParameterValue": "subnet-9c3b5eb1"
+  }, {
+    "ParameterKey": "SubnetIdB",
+    "ParameterValue": "subnet-a0297ce9"
+  }, {
+    "ParameterKey": "CustomerManagedDnsIpA",
+    "ParameterValue": "172.31.0.2"
+  }, {
+    "ParameterKey": "CustomerManagedDnsIpB",
+    "ParameterValue": "172.31.0.2"
+  }, {
+    "ParameterKey": "CustomerPrivateHostedZoneDomainName",
+    "ParameterValue": "aws.customer"
+  }
+
+]
