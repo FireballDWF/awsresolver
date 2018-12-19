@@ -1,9 +1,23 @@
 AWSTemplateFormatVersion: 2010-09-09
 Parameters:
-  VPCName:
-    Description: "Stack name of parent VPC stack."
+  VPCId:
+    Description: "VpcId of existing VPC where the Resolver should be located in"
+    Type: AWS::EC2::VPC::Id
+  SubnetIdA:
+    Description: "SubnetId for location of Resolver Endpoint"
+    Type: AWS::EC2::Subnet::Id
+  SubnetIdB:
+    Description: "SubnetId for location of Resolver Endpoint"
+    Type: AWS::EC2::Subnet::Id
+  CustomerManagedDnsIpA:
+    Description: "IP Address of Customer's Managed DNS"
     Type: String
-
+  CustomerManagedDnsIpB:
+    Description: "IP Address of Customer's Managed DNS"
+    Type: String
+  CustomerPrivateHostedZoneDomainName:
+    Description: "DomainName of Customers PrivateHostedZone"
+    Type: String
 Resources:
   ResolverSecGroup:
     Type: AWS::EC2::SecurityGroup
@@ -11,7 +25,7 @@ Resources:
       GroupDescription: Open-up ports for bind
       GroupName: !Join ["-", [Ref: "AWS::StackName", "dns-sec-group"]]
       VpcId:
-        "Fn::ImportValue": !Sub "${VPCName}-VPC"
+        !Ref VPCId
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: "53"
@@ -28,9 +42,9 @@ Resources:
       Direction: "outbound"
       IpAddresses:
         - SubnetId:
-            "Fn::ImportValue": !Sub "${VPCName}-PrivateSubnetA"
+            !Ref SubnetIdA
         - SubnetId:
-            "Fn::ImportValue": !Sub "${VPCName}-PrivateSubnetB"
+            !Ref SubnetIdB
       Name: !Join ["-", [Ref: "AWS::StackName", "endpoint"]]
       SecurityGroupIds:
         - !Ref ResolverSecGroup
@@ -41,9 +55,9 @@ Resources:
       Direction: "inbound"
       IpAddresses:
         - SubnetId:
-            "Fn::ImportValue": !Sub "${VPCName}-PrivateSubnetA"
+            !Ref SubnetIdA
         - SubnetId:
-            "Fn::ImportValue": !Sub "${VPCName}-PrivateSubnetB"
+            !Ref SubnetIdB
       Name: !Join ["-", [Ref: "AWS::StackName", "endpoint"]]
       SecurityGroupIds:
         - !Ref ResolverSecGroup
@@ -56,8 +70,9 @@ Resources:
       ResolverEndpointId: !GetAtt DNSOutboundEndpoint.ResolverEndpointId
       RuleType: "FORWARD"
       TargetIps:
-        - Ip:
-            "Fn::ImportValue": !Sub "${VPCName}-nameServerIP"
+        - Ip: !Ref CustomerManagedDnsIpA
+          Port: "53"
+        - Ip: !Ref CustomerManagedDnsIpB
           Port: "53"
 
   DNSRule2:
@@ -70,8 +85,8 @@ Resources:
   DNSRule3:
     Type: "AWS::Route53Resolver::ResolverRule"
     Properties:
-      DomainName: "aws.seibtribe.com"
-      Name: !Join ["-", [Ref: "AWS::StackName", "seibtribe"]]
+      DomainName: !Ref CustomerPrivateHostedZoneDomainName
+      Name: !Join ["-", [Ref: "AWS::StackName", "customer-domain"]]
       RuleType: "SYSTEM"
 
 Outputs:
@@ -83,7 +98,7 @@ Outputs:
         - - "aws route53resolver associate-resolver-rule --resolver-rule-id"
           - !GetAtt DNSRule1.ResolverRuleId
           - "--vpc-id"
-          - Fn::ImportValue: !Sub ${VPCName}-VPC
+          -  !Ref VPCId
   Rule2:
     Description: rule 2 associate command
     Value:
@@ -92,7 +107,7 @@ Outputs:
         - - "aws route53resolver associate-resolver-rule --resolver-rule-id"
           - !GetAtt DNSRule2.ResolverRuleId
           - "--vpc-id"
-          - Fn::ImportValue: !Sub ${VPCName}-VPC
+          -  !Ref VPCId
 
   Rule3:
     Description: rule 3 associate command
@@ -102,4 +117,4 @@ Outputs:
         - - "aws route53resolver associate-resolver-rule --resolver-rule-id"
           - !GetAtt DNSRule3.ResolverRuleId
           - "--vpc-id"
-          - Fn::ImportValue: !Sub ${VPCName}-VPC
+          -  !Ref VPCId
